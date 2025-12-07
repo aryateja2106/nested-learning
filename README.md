@@ -1,6 +1,8 @@
-# Nested Learning (HOPE) – Community Reproduction
+# Nested Learning (HOPE) – open, humble reproduction
 
-Early, open-source implementation of the Nested Learning / HOPE ideas. Built by a product-focused tinkerer; “LeCoder skills” coming soon to bundle this into a friendlier toolkit.
+This repo is a learning-driven, open-source reproduction of the Nested Learning / HOPE ideas. I’m sharing early so others—researchers, product folks, and curious builders—can explore, critique, and improve it together. “LeCoder” stands for *Less Code, More Implementation*; a skill file for coding agents will be shared soon to help translate research papers into runnable code.
+
+Reference blog/paper: https://research.google/blog/introducing-nested-learning-a-new-ml-paradigm-for-continual-learning/
 
 ## What’s inside
 - HOPE model (Titans + Continuum Memory System) in PyTorch
@@ -69,9 +71,10 @@ run_cgpu_uv.sh     # Colab helper using cgpu + uv
 - `.gitignore` excludes common env/cache/logs and credential patterns; keep secrets out of the repo.
 
 ## Contributing
-- Issues/PRs welcome; keep changes small and include `pytest` output when touching code paths.
-- If you try the Colab flow, share logs so others can compare results.
+- All backgrounds welcome—research, product, business, or just curious. If you try it, please share logs/results so others can learn.
+- Keep changes small and include `pytest` output when touching code paths.
+- A LeCoder “skill” file will arrive soon to help coding agents turn research papers into runnable code.
 
 ## Attribution
-- Inspired by the Nested Learning / HOPE paper (no official code release yet).
+- Based on the Nested Learning / HOPE paper and blog linked above (no official code release yet).
 - Colab bridging via [`cgpu`](https://github.com/RohanAdwankar/cgpu).
