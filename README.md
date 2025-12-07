@@ -28,7 +28,6 @@ Prefer pip only? Use your usual `python -m venv` + `pip install -r requirements.
 - If in Colab, upload the repo and run cells; if local, install deps first.
 
 ## GPU options
-- Local GPU sanity: `python gpu_test.py`
 - Colab from your terminal (optional):
   ```bash
   npm i -g cgpu
@@ -60,7 +59,6 @@ demo/app.py        # Gradio demo
 tests/             # unit tests
 notebooks/         # quickstart notebook
 run_cgpu_uv.sh     # Colab helper using cgpu + uv
-gpu_test.py        # local CUDA sanity check
 ```
 
 ## Hardware notes
