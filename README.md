@@ -1,44 +1,26 @@
 # Nested Learning: Implementation from Scratch
 
-![Paper](https://img.shields.io/badge/Paper-Nested%20Learning-blue) ![Blog](https://img.shields.io/badge/Blog-Google%20Research-0b7285) ![License](https://img.shields.io/badge/License-MIT-green) ![Python](https://img.shields.io/badge/Python-3.9%2B-yellow)
+![Paper](https://img.shields.io/badge/Paper-NeurIPS%202025-blue) ![Paper%20PDF](https://img.shields.io/badge/PDF-NL.pdf-0b7285) ![License](https://img.shields.io/badge/License-MIT-green) ![Python](https://img.shields.io/badge/Python-3.9%2B-yellow)
 
 > Less Code, More Reproduction — a LeCoder project (skill file coming soon to help any coding agent run research code).  
-> From-scratch reproduction of “Nested Learning: The Illusion of Deep Learning Architecture” (NeurIPS 2025) — paper: https://abehrouz.github.io/files/NL.pdf • blog: https://research.google/blog/introducing-nested-learning-a-new-ml-paradigm-for-continual-learning/
+> Built humbly to learn the paper end-to-end and invite others—researchers, product folks, and the simply curious—to explore, fork, and improve together.
 
-I built this to understand the paper’s algorithms end-to-end and welcome others (researchers, product folks, non-technical leaders, curious learners) to try it, fork it, and send feedback/PRs.
+**Paper & Blog**:  
+- PDF: https://abehrouz.github.io/files/NL.pdf  
+- Blog: https://research.google/blog/introducing-nested-learning-a-new-ml-paradigm-for-continual-learning/
 
-## Quick start
-```bash
-# Clone
-git clone https://github.com/aryateja2106/nested-learning.git
-cd nested-learning
+---
 
-# Fast setup with uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uv venv .venv && source .venv/bin/activate
-UV_PYTHON=.venv/bin/python uv pip install --python .venv/bin/python -r requirements.txt
+## 🎯 What is Nested Learning?
+Nested Learning (NL) views models as nested, multi-level optimization problems, each with its own “context flow” and update frequency.
 
-# Smoke checks
-uv run pytest tests/test_components.py
-uv run python demo/app.py
-uv run python train_hope.py --config small --steps 500 --batch-size 8
-```
-Prefer pip only? Use `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`.
+Key insights:
+- **Optimizers as associative memories**: Adam, SGD with momentum compress gradients.  
+- **Uniform architecture**: Feedforward networks with different update clocks.  
+- **Pre-training as in-context learning** over long contexts.  
+- **Continuum Memory System (CMS)** spans fast/slow memories for long-/short-term storage.
 
-## GPU (optional)
-- Tested on NVIDIA A100 via [`cgpu`](https://github.com/RohanAdwankar/cgpu); small configs and the notebook run on Colab L4/T4 or CPU for quick sanity.
-- Colab from terminal:
-  ```bash
-  npm i -g cgpu
-  cgpu status
-  bash run_cgpu_uv.sh   # sync repo to Colab, install via uv, run GPU smoke test
-  cgpu connect          # open a shell in the same Colab runtime
-  ```
-
-## Notebook
-- `notebooks/quickstart.ipynb` — minimal forward/backward sanity check (CPU or GPU). Upload to Colab or run locally after installing deps.
-
-## Architecture (HOPE)
+## 🏗️ Architecture Overview (HOPE)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Hope Architecture                         │
@@ -62,26 +44,79 @@ Prefer pip only? Use `python -m venv .venv && source .venv/bin/activate && pip i
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## What is Nested Learning? (skim)
-- Nested, multi-level optimization with per-level update frequencies (“context flow”).
-- Optimizers as associative memories (Adam, SGD with momentum compress gradients).
-- Architectures as uniform feedforward nets with differing update clocks.
-- Pre-training as in-context learning over long contexts.
-- CMS spans fast/slow memories to generalize long-/short-term storage.
+---
 
-## Train in one line
+## 📦 Installation
+```bash
+git clone https://github.com/aryateja2106/nested-learning.git
+cd nested-learning
+```
+
+### 🧰 Fast setup with `uv` (recommended)
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv venv .venv && source .venv/bin/activate
+UV_PYTHON=.venv/bin/python uv pip install --python .venv/bin/python -r requirements.txt
+
+# Smoke checks
+uv run pytest tests/test_components.py
+uv run python demo/app.py
+uv run python train_hope.py --config small --steps 500 --batch-size 8
+```
+Prefer pip? `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`.
+
+### ☁️ Optional Colab GPU via `cgpu`
+[`cgpu`](https://github.com/RohanAdwankar/cgpu) opens a Colab GPU session from your terminal.
+```bash
+npm i -g cgpu
+cgpu status
+bash run_cgpu_uv.sh   # sync repo, install via uv, run GPU smoke test on Colab
+cgpu connect          # shell into the same Colab runtime
+```
+Tested on A100; small configs and the notebook run on Colab L4/T4 or CPU for quick checks.
+
+### 📓 Notebook
+`notebooks/quickstart.ipynb` — minimal forward/backward sanity check (CPU or GPU). Upload to Colab or run locally after installing deps.
+
+---
+
+## 🚀 Quick Start
+1) **Demo**  
+```bash
+python demo/app.py
+```
+2) **Train (presets)**  
 ```bash
 uv run python train_hope.py --config small  --steps 500  --optimizer adamw   # quick
 uv run python train_hope.py --config medium --steps 2000 --optimizer m3     # mid
 uv run python train_hope.py --config large  --steps 5000 --optimizer dgd    # bigger
 ```
-Presets adjust model size/batch/seq length; AMP on by default. Reduce sizes for CPU.
+3) **Components**  
+```python
+from src.core.optimizers import DeltaGradientDescent, M3Optimizer
+from src.core.memory import ContinuumMemorySystem
+from src.models.hope import Hope
 
-## Project layout
+model = Hope(d_model=512, n_layers=6, cms_levels=4, chunk_size=16)
+opt = M3Optimizer(model.parameters(), lr=1e-4)
+```
+
+---
+
+## 📚 Key Components (skim)
+- **Delta Gradient Descent (DGD)**: updates weights with an adaptive decay term tied to current input.  
+  \(W_{t+1} = W_t (I - η'_t x_t x_t^T) - η'_t ∇_y L(W_t; x_t) ⊗ x_t\)
+- **Continuum Memory System (CMS)**: spectrum of MLP blocks with different update frequencies (fast ↔ slow).
+- **Multi-scale Momentum Muon (M3)**: fast + slow momentum with Newton-Schulz orthogonalization.
+- **Self-Modifying Titans**: generates and updates its own memory values.
+
+---
+
+## 📂 Project Structure
 ```
 src/core/          # optimizers, CMS
 src/models/        # Titans, Hope
-train_hope.py      # training entrypoint with presets
+train_hope.py      # training entrypoint with presets (AMP on)
 demo/app.py        # Gradio demo
 tests/             # unit tests
 notebooks/         # quickstart notebook
@@ -90,16 +125,32 @@ docs/ALGORITHMS.md # algorithm notes
 requirements.txt
 ```
 
-## For contributors & readers
-- Please open issues/PRs, fork, or share logs; all backgrounds are welcome.
-- Keep PRs small; include `pytest` output when changing code paths.
-- If you’re curious how this was built with coding agents, reach out—happy to share the process. A LeCoder skill file will arrive soon.
+---
 
-## Acknowledgments
-- Research: “Nested Learning: The Illusion of Deep Learning Architecture” (Behrouz, Razaviyayn, Zhong, Mirrokni).
-- Blog: Google Research introduction linked above.
-- Tools: [`cgpu`](https://github.com/RohanAdwankar/cgpu) for seamless Colab access from the terminal.
-- Inspiration: the open-source community reproducing cutting-edge papers so others can learn faster.
+## 🤝 Welcome to contribute
+- Fork, open issues/PRs, or share logs/results; all backgrounds are welcome.
+- Keep PRs small and include `pytest` output when touching code paths.
+- Curious how this was built with coding agents? Reach out—happy to share. A LeCoder skill file will follow.
 
-## Security note
-- Past commits contained credentials that have been removed from the tree; rotate/regenerate any exposed keys and avoid reusing them. `.gitignore` now excludes common secret patterns.
+---
+
+## 🙏 Acknowledgments
+- Research: “Nested Learning: The Illusion of Deep Learning Architecture” (Behrouz, Razaviyayn, Zhong, Mirrokni).  
+- Blog: Google Research introduction (link above).  
+- Tools: [`cgpu`](https://github.com/RohanAdwankar/cgpu) for seamless Colab-from-terminal access.  
+- Inspiration: open-source efforts that make cutting-edge research runnable and teachable.
+
+## 🔒 Security note
+- Past commits contained credentials that are now removed; **rotate/regenerate any exposed keys**. `.gitignore` excludes common secret patterns—please keep secrets out of the repo.
+
+---
+
+## 📜 Citation
+```bibtex
+@inproceedings{behrouz2025nested,
+  title={Nested Learning: The Illusion of Deep Learning Architecture},
+  author={Behrouz, Ali and Razaviyayn, Meisam and Zhong, Peilin and Mirrokni, Vahab},
+  booktitle={NeurIPS},
+  year={2025}
+}
+```
