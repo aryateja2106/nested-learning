@@ -30,3 +30,8 @@ coverage.xml
 
 # Logs
 *.log
+
+# Secrets / credentials
+client_secret*.json
+credentials*.json
+*colab*.json
