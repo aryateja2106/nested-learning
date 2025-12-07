@@ -1,0 +1,32 @@
+# Bytecode and cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.cache/
+
+# Environments
+.env
+.venv
+venv/
+env/
+
+# Packaging / builds
+build/
+dist/
+*.egg-info/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Coverage / reports
+.coverage
+coverage.xml
+
+# Logs
+*.log

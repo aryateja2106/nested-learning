@@ -106,6 +106,11 @@ uv run python train_hope.py --config small --steps 2000
 - Training entrypoint: `train_hope.py --config {small,medium,large}` with flags for steps, batch size, and optimizer (`adamw`, `m3`, `dgd`).
 - Core logic: `src/core` (optimizers, CMS) and `src/models` (Titans, Hope).
 - Tests: `pytest tests/test_components.py`.
+- Notebook quickstart: open `notebooks/quickstart.ipynb` (works on CPU or GPU). In Colab, upload the repo and run; locally, ensure deps are installed first.
+
+### 🖥️ Hardware notes
+- Primary validation was done on an NVIDIA A100 via `cgpu`, but the code also runs on standard Colab GPUs (L4/T4) for smoke tests and small configs.
+- The tiny configs in `train_hope.py --config small` and `notebooks/quickstart.ipynb` fit on CPU if you just want to check shapes/flow.
 
 ## 🚀 Quick Start
 
@@ -195,6 +200,8 @@ nested-learning/
 │   └── app.py                 # Gradio interactive demo
 ├── tests/
 │   └── test_components.py
+├── notebooks/
+│   └── quickstart.ipynb       # Minimal run-through for CPU/GPU
 ├── train_hope.py              # Training script with presets and AMP
 ├── run_cgpu_uv.sh             # Colab helper: cgpu + uv sync + GPU smoke test
 ├── gpu_test.py                # Local CUDA sanity check
@@ -250,6 +257,11 @@ For component A, frequency f_A = number of updates per unit time.
 ## 🌱 Open Source & Call for Contributors
 
 This is an early, community-first reproduction of Nested Learning / HOPE—built by a product-minded tinkerer rather than an AI-native research lab. There is no widely published official code from the paper yet, so forks, issues, PRs, and stars are extra valuable for stress-testing the ideas. If you try the Colab `cgpu` flow or run `train_hope.py`, please share logs or improvements so others can learn from them.
+
+### For maintainers and contributors
+- A standard `.gitignore` is included (pyc/venv/logs/IDE caches). Keep new artifacts out of version control.
+- Prefer small, reviewable PRs; include `pytest` output for changes that touch code paths.
+- For non-technical testers, point them to `notebooks/quickstart.ipynb` or the `cgpu` Colab flow so they can run without local setup.
 
 ## 🔗 Related Work
 
