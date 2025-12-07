@@ -1,8 +1,48 @@
 # Nested Learning (HOPE) – open, humble reproduction
 
-This repo is a learning-driven, open-source reproduction of the Nested Learning / HOPE ideas. I’m sharing early so others—researchers, product folks, and curious builders—can explore, critique, and improve it together. “LeCoder” stands for *Less Code, More Implementation*; a skill file for coding agents will be shared soon to help translate research papers into runnable code.
+Paper: [Google Research blog](https://research.google/blog/introducing-nested-learning-a-new-ml-paradigm-for-continual-learning/) • License: MIT • Python: 3.9+
 
-Reference blog/paper: https://research.google/blog/introducing-nested-learning-a-new-ml-paradigm-for-continual-learning/
+This repo is a learning-driven, from-scratch reproduction of the Nested Learning / HOPE ideas. It is shared early so researchers, product folks, and curious builders can explore, critique, and improve it together. “LeCoder” stands for *Less Code, More Implementation*; a skill file for coding agents will be shared soon to help translate research papers into runnable code.
+
+## What is Nested Learning?
+Nested Learning views models as nested, multi-level optimization problems, each with its own “context flow” and update frequency.
+
+Key insights:
+- Optimizers as associative memories (Adam, SGD with momentum compress gradients).
+- Architectures as uniform feedforward networks with different update frequencies.
+- Pre-training as in-context learning over a very long context.
+- Continuum Memory System (CMS) spans fast/slow memories to generalize long-/short-term storage.
+
+## Architecture overview (HOPE)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Hope Architecture                         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │           Self-Modifying Titans                      │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐           │   │
+│  │  │  M_key   │  │  M_value │  │ M_memory │           │   │
+│  │  │ (adapt)  │  │ (adapt)  │  │  (adapt) │           │   │
+│  │  └──────────┘  └──────────┘  └──────────┘           │   │
+│  │         ↓ Delta Gradient Descent (DGD)               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           ↓                                 │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │         Continuum Memory System (CMS)                │   │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐ │   │
+│  │  │ MLP^f1  │→ │ MLP^f2  │→ │ MLP^f3  │→ │ MLP^fk  │ │   │
+│  │  │ (high)  │  │  (mid)  │  │  (low)  │  │ (lowest)│ │   │
+│  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘ │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## How this repo is built
+- PyTorch implementation of HOPE (Titans + CMS) under `src/models` and optimizers under `src/core`.
+- Training script `train_hope.py` with small/medium/large presets; AMP on by default.
+- Minimal notebook `notebooks/quickstart.ipynb` for a fast forward/backward sanity check.
+- Optional Colab bridge via [`cgpu`](https://github.com/RohanAdwankar/cgpu); tested on A100, also runs on Colab L4/T4 for small configs.
+- “LeCoder” skill (Less Code, More Implementation) coming soon as a `skill.md` for coding agents.
 
 ## What’s inside
 - HOPE model (Titans + Continuum Memory System) in PyTorch
