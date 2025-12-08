@@ -332,40 +332,32 @@ phase9_training() {
     log_info "Starting training (this may take several minutes)..."
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Training in progress... (Watch for progress updates below)"
+    echo "  Training in progress... (Output will stream below)"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
     TRAIN_CMD="cd ${REMOTE_DIR} && python -m src.experiments.enterprise_pipeline --config $CONFIG --steps $STEPS --output-json"
     
-    # Run training and capture output
-    TRAIN_OUTPUT=$($CGPU_BIN run --verbose "$TRAIN_CMD" 2>&1)
+    log_info "Executing training command..."
+    log_info "Note: Training output will stream in real-time. This may take 5-15 minutes for ${STEPS} steps."
+    echo ""
+    
+    # Run training - output streams directly (no buffering)
+    # The --verbose flag should show output in real-time
+    # If command fails, capture exit code
+    set +e  # Don't exit on error immediately
+    $CGPU_BIN run --verbose "$TRAIN_CMD" 2>&1
     TRAIN_EXIT_CODE=$?
+    set -e  # Re-enable exit on error
     
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
     if [ $TRAIN_EXIT_CODE -eq 0 ]; then
         log_success "Training completed successfully!"
-        
-        # Extract and display key metrics if available
-        if echo "$TRAIN_OUTPUT" | grep -q "Final Results"; then
-            echo ""
-            log_info "Final Training Results:"
-            echo "$TRAIN_OUTPUT" | grep -A 20 "Final Results" | head -25
-        fi
-        
-        # Show JSON output if available
-        if echo "$TRAIN_OUTPUT" | grep -q "\"status\""; then
-            echo ""
-            log_info "Training Summary (JSON):"
-            echo "$TRAIN_OUTPUT" | grep -E "\"(status|total_steps|final_loss|throughput)\"" | head -10
-        fi
     else
         log_error "Training failed with exit code: $TRAIN_EXIT_CODE"
-        echo ""
-        log_info "Last 20 lines of output:"
-        echo "$TRAIN_OUTPUT" | tail -20
+        log_info "Check the output above for error details"
         exit 1
     fi
     
