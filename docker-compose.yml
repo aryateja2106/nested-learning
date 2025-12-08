@@ -1,0 +1,14 @@
+services:
+  lecoder:
+    build: .
+    ports:
+      - "7860:7860"
+    volumes:
+      # Mount source code for development (optional)
+      - ./src:/app/src
+      - ./demo:/app/demo
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Override command if you want to run training instead
+    # command: python train_hope.py --config small --steps 500
+

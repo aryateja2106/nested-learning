@@ -10,7 +10,8 @@ __pycache__/
 
 # Environments
 .env
-.venv
+.env.*
+.venv/
 venv/
 env/
 
@@ -23,15 +24,45 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 
 # Coverage / reports
 .coverage
 coverage.xml
+htmlcov/
 
 # Logs
 *.log
+logs/
+
+# Gradio
+.gradio/
+*.pem
+
+# Claude local settings (keep skills, ignore local config)
+.claude/settings.local.json
+
+# Training outputs
+training_results.json
+outputs/
+results/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+wandb/
+
+# Temporary files
+*.tmp
+.commit_msg.txt
 
 # Secrets / credentials
 client_secret*.json
 credentials*.json
 *colab*.json
+*secret*
+*credential*
+*token*.json
+!package*.json
