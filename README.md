@@ -37,8 +37,14 @@ Check out our [Enterprise Experiment Guide](docs/LECODER_CGPU_GUIDE.md) to see h
 
 **Try it yourself:**
 ```bash
-npm install -g lecoder-cgpu
+# Install from source (package not yet published to npm)
+cd lecoder-cgpu && npm install && npm link
+cd ..
+
+# Authenticate
 lecoder-cgpu auth
+
+# Run experiment
 ./run_lecoder_experiment.sh full
 ```
 
@@ -185,8 +191,8 @@ optimizer = M3Optimizer(model.parameters(), lr=1e-4)
 #### Quick Start
 
 ```bash
-# Install LeCoder cGPU CLI
-npm install -g lecoder-cgpu
+# Install LeCoder cGPU CLI from source
+cd lecoder-cgpu && npm install && npm link && cd ..
 
 # Authenticate
 lecoder-cgpu auth

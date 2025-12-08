@@ -76,14 +76,25 @@ phase1_setup() {
     
     # Check authentication status
     log_info "Checking authentication status..."
-    if ! $CGPU_BIN status --json > /dev/null 2>&1; then
-        log_warning "Not authenticated. Please run: $CGPU_BIN auth"
+    
+    # Get status as JSON for parsing
+    STATUS_JSON=$($CGPU_BIN status --json 2>/dev/null)
+    
+    if [ -z "$STATUS_JSON" ]; then
+        log_error "Could not get status. Please run: $CGPU_BIN auth"
         exit 1
     fi
     
-    # Get status as JSON for parsing
-    STATUS_JSON=$($CGPU_BIN status --json)
-    AUTHENTICATED=$(echo "$STATUS_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('authenticated', False))" 2>/dev/null || echo "false")
+    # Check if authenticated (handle both boolean true and string "true")
+    AUTHENTICATED=$(echo "$STATUS_JSON" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    auth = data.get('authenticated', False)
+    print('true' if auth else 'false')
+except:
+    print('false')
+" 2>/dev/null || echo "false")
     
     if [ "$AUTHENTICATED" != "true" ]; then
         log_error "Authentication failed. Please run: $CGPU_BIN auth"
@@ -93,7 +104,15 @@ phase1_setup() {
     log_success "Authenticated successfully"
     
     # Show eligible GPUs
-    ELIGIBLE_GPUS=$(echo "$STATUS_JSON" | python3 -c "import sys, json; gpus = json.load(sys.stdin).get('eligibleGpus', []); print(', '.join(gpus) if gpus else 'None')" 2>/dev/null || echo "Unknown")
+    ELIGIBLE_GPUS=$(echo "$STATUS_JSON" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    gpus = data.get('eligibleGpus', [])
+    print(', '.join(gpus) if gpus else 'None')
+except:
+    print('Unknown')
+" 2>/dev/null || echo "Unknown")
     log_info "Eligible GPUs: $ELIGIBLE_GPUS"
     echo ""
 }
