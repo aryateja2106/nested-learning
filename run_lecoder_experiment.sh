@@ -329,16 +329,46 @@ phase9_training() {
     
     log_info "Running enterprise pipeline experiment..."
     log_info "Config: $CONFIG, Steps: $STEPS"
+    log_info "Starting training (this may take several minutes)..."
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Training in progress... (Watch for progress updates below)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     
     TRAIN_CMD="cd ${REMOTE_DIR} && python -m src.experiments.enterprise_pipeline --config $CONFIG --steps $STEPS --output-json"
     
-    log_info "Starting training (this may take several minutes)..."
-    $CGPU_BIN run --verbose "$TRAIN_CMD" || {
-        log_error "Training failed"
-        exit 1
-    }
+    # Run training and capture output
+    TRAIN_OUTPUT=$($CGPU_BIN run --verbose "$TRAIN_CMD" 2>&1)
+    TRAIN_EXIT_CODE=$?
     
-    log_success "Training completed"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    if [ $TRAIN_EXIT_CODE -eq 0 ]; then
+        log_success "Training completed successfully!"
+        
+        # Extract and display key metrics if available
+        if echo "$TRAIN_OUTPUT" | grep -q "Final Results"; then
+            echo ""
+            log_info "Final Training Results:"
+            echo "$TRAIN_OUTPUT" | grep -A 20 "Final Results" | head -25
+        fi
+        
+        # Show JSON output if available
+        if echo "$TRAIN_OUTPUT" | grep -q "\"status\""; then
+            echo ""
+            log_info "Training Summary (JSON):"
+            echo "$TRAIN_OUTPUT" | grep -E "\"(status|total_steps|final_loss|throughput)\"" | head -10
+        fi
+    else
+        log_error "Training failed with exit code: $TRAIN_EXIT_CODE"
+        echo ""
+        log_info "Last 20 lines of output:"
+        echo "$TRAIN_OUTPUT" | tail -20
+        exit 1
+    fi
+    
     echo ""
 }
 
