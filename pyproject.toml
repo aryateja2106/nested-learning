@@ -1,0 +1,77 @@
+[project]
+name = "nested-learning"
+version = "0.1.0"
+description = "From-scratch implementation of Google Research's Nested Learning paper"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "LeCoder Project" }]
+keywords = ["machine-learning", "deep-learning", "nested-learning", "pytorch", "research"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.21.0",
+    "matplotlib>=3.5.0",
+    "gradio>=4.0.0",
+    "tqdm>=4.62.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.8.0",
+    "ty>=0.0.1a7",
+]
+
+[project.urls]
+Homepage = "https://github.com/aryateja2106/nested-learning"
+Repository = "https://github.com/aryateja2106/nested-learning"
+Documentation = "https://github.com/aryateja2106/nested-learning#readme"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+extend-exclude = ["notebooks/"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ty]
+# Ty configuration - lenient for ML/research code with incomplete type stubs
+python-version = "3.9"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+

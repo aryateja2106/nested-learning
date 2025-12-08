@@ -12,29 +12,27 @@ Usage:
     python train_hope.py --config large   # Full training
 """
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
 import argparse
-import time
 import json
 import math
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Optional
-from pathlib import Path
+import time
+from dataclasses import asdict, dataclass
 
+import torch
+from torch.utils.data import DataLoader, Dataset
+
+from src.core.optimizers import DeltaGradientDescent, M3Optimizer
 from src.models.hope import Hope, HopeConfig
-from src.core.optimizers import M3Optimizer, DeltaGradientDescent
-
 
 # ============================================================================
 # Configuration
 # ============================================================================
 
+
 @dataclass
 class TrainConfig:
     """Training configuration."""
+
     # Model
     d_model: int = 256
     d_hidden: int = 1024
@@ -76,16 +74,34 @@ class TrainConfig:
 
 CONFIGS = {
     "small": TrainConfig(
-        d_model=128, d_hidden=512, num_layers=2, num_heads=4,
-        batch_size=32, seq_len=64, num_steps=200, vocab_size=5000
+        d_model=128,
+        d_hidden=512,
+        num_layers=2,
+        num_heads=4,
+        batch_size=32,
+        seq_len=64,
+        num_steps=200,
+        vocab_size=5000,
     ),
     "medium": TrainConfig(
-        d_model=256, d_hidden=1024, num_layers=4, num_heads=8,
-        batch_size=16, seq_len=128, num_steps=500, vocab_size=10000
+        d_model=256,
+        d_hidden=1024,
+        num_layers=4,
+        num_heads=8,
+        batch_size=16,
+        seq_len=128,
+        num_steps=500,
+        vocab_size=10000,
     ),
     "large": TrainConfig(
-        d_model=512, d_hidden=2048, num_layers=6, num_heads=8,
-        batch_size=8, seq_len=256, num_steps=1000, vocab_size=32000
+        d_model=512,
+        d_hidden=2048,
+        num_layers=6,
+        num_heads=8,
+        batch_size=8,
+        seq_len=256,
+        num_steps=1000,
+        vocab_size=32000,
     ),
 }
 
@@ -93,6 +109,7 @@ CONFIGS = {
 # ============================================================================
 # Dataset
 # ============================================================================
+
 
 class SyntheticLMDataset(Dataset):
     """
@@ -124,7 +141,7 @@ class SyntheticLMDataset(Dataset):
             pattern_len = torch.randint(4, 16, (1,)).item()
             pattern = torch.randint(0, self.vocab_size, (pattern_len,))
             repeats = self.seq_len // pattern_len + 1
-            tokens = pattern.repeat(repeats)[:self.seq_len]
+            tokens = pattern.repeat(repeats)[: self.seq_len]
         elif pattern_type == 2:
             # Arithmetic sequence (mod vocab_size)
             start = torch.randint(0, self.vocab_size, (1,)).item()
@@ -135,7 +152,7 @@ class SyntheticLMDataset(Dataset):
             half = self.seq_len // 2 - 1
             prefix = torch.randint(0, self.vocab_size - 1, (half,))
             delimiter = torch.tensor([self.vocab_size - 1])  # Special delimiter
-            tokens = torch.cat([prefix, delimiter, prefix, delimiter])[:self.seq_len]
+            tokens = torch.cat([prefix, delimiter, prefix, delimiter])[: self.seq_len]
 
         return {"input_ids": tokens, "labels": tokens}
 
@@ -143,6 +160,7 @@ class SyntheticLMDataset(Dataset):
 # ============================================================================
 # Training
 # ============================================================================
+
 
 class Trainer:
     """Hope model trainer with structured logging."""
@@ -169,8 +187,7 @@ class Trainer:
 
         if self.config.optimizer == "adamw":
             return torch.optim.AdamW(
-                params, lr=self.config.learning_rate,
-                weight_decay=self.config.weight_decay
+                params, lr=self.config.learning_rate, weight_decay=self.config.weight_decay
             )
         elif self.config.optimizer == "m3":
             return M3Optimizer(params, lr=self.config.learning_rate)
@@ -194,10 +211,10 @@ class Trainer:
         """Update learning rate."""
         lr = self._get_lr()
         for param_group in self.optimizer.param_groups:
-            param_group['lr'] = lr
+            param_group["lr"] = lr
         return lr
 
-    def train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
+    def train_step(self, batch: dict[str, torch.Tensor]) -> dict[str, float]:
         """Single training step."""
         self.model.train()
         self.step += 1
@@ -242,7 +259,7 @@ class Trainer:
         }
 
     @torch.no_grad()
-    def evaluate(self, dataloader: DataLoader) -> Dict[str, float]:
+    def evaluate(self, dataloader: DataLoader) -> dict[str, float]:
         """Evaluate model."""
         self.model.eval()
         total_loss = 0.0
@@ -268,7 +285,7 @@ class Trainer:
             "eval_perplexity": math.exp(min(avg_loss, 10)),
         }
 
-    def train(self, train_loader: DataLoader, eval_loader: DataLoader) -> Dict:
+    def train(self, train_loader: DataLoader, eval_loader: DataLoader) -> dict:
         """Full training loop."""
         print("\n" + "=" * 70)
         print("HOPE MODEL TRAINING")
@@ -315,13 +332,15 @@ class Trainer:
             # Evaluation
             if step % self.config.eval_interval == 0:
                 eval_metrics = self.evaluate(eval_loader)
-                print(f"\n>>> EVAL @ Step {step}: "
-                      f"Loss={eval_metrics['eval_loss']:.4f}, "
-                      f"PPL={eval_metrics['eval_perplexity']:.2f}, "
-                      f"Acc={eval_metrics['eval_accuracy']:.3f}\n")
+                print(
+                    f"\n>>> EVAL @ Step {step}: "
+                    f"Loss={eval_metrics['eval_loss']:.4f}, "
+                    f"PPL={eval_metrics['eval_perplexity']:.2f}, "
+                    f"Acc={eval_metrics['eval_accuracy']:.3f}\n"
+                )
 
-                if eval_metrics['eval_loss'] < best_loss:
-                    best_loss = eval_metrics['eval_loss']
+                if eval_metrics["eval_loss"] < best_loss:
+                    best_loss = eval_metrics["eval_loss"]
 
         # Final evaluation
         final_metrics = self.evaluate(eval_loader)
@@ -353,7 +372,9 @@ class Trainer:
                 "device": str(self.device),
                 "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A",
                 "gpu_memory_used_gb": torch.cuda.max_memory_allocated() / 1e9,
-                "gpu_memory_total_gb": torch.cuda.get_device_properties(0).total_memory / 1e9 if torch.cuda.is_available() else 0,
+                "gpu_memory_total_gb": torch.cuda.get_device_properties(0).total_memory / 1e9
+                if torch.cuda.is_available()
+                else 0,
             },
             "config": asdict(self.config),
         }
@@ -361,7 +382,7 @@ class Trainer:
         return results
 
 
-def print_results(results: Dict):
+def print_results(results: dict):
     """Print formatted results."""
     print("\n" + "=" * 70)
     print("TRAINING RESULTS")
@@ -398,7 +419,9 @@ def print_results(results: Dict):
 
 def main():
     parser = argparse.ArgumentParser(description="Train Hope Model")
-    parser.add_argument("--config", type=str, default="medium", choices=["small", "medium", "large"])
+    parser.add_argument(
+        "--config", type=str, default="medium", choices=["small", "medium", "large"]
+    )
     parser.add_argument("--optimizer", type=str, default=None, choices=["adamw", "m3", "dgd"])
     parser.add_argument("--steps", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
@@ -440,12 +463,10 @@ def main():
     train_dataset = SyntheticLMDataset(
         vocab_size=config.vocab_size,
         seq_len=config.seq_len,
-        num_samples=config.num_steps * config.batch_size * 2
+        num_samples=config.num_steps * config.batch_size * 2,
     )
     eval_dataset = SyntheticLMDataset(
-        vocab_size=config.vocab_size,
-        seq_len=config.seq_len,
-        num_samples=config.batch_size * 10
+        vocab_size=config.vocab_size, seq_len=config.seq_len, num_samples=config.batch_size * 10
     )
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
