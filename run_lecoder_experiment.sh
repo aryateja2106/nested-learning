@@ -323,8 +323,9 @@ phase9_training() {
     log_info "Phase 9: Full Training Experiment"
     echo "─────────────────────────────────────────"
     
-    CONFIG="${2:-a100}"
-    STEPS="${3:-1000}"
+    # $1 is config, $2 is steps (when called with arguments)
+    CONFIG="${1:-a100}"
+    STEPS="${2:-1000}"
     
     log_info "Running enterprise pipeline experiment..."
     log_info "Config: $CONFIG, Steps: $STEPS"
