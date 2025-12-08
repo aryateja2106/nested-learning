@@ -454,7 +454,6 @@ class DeepMomentum(Optimizer):
 
         for group in self.param_groups:
             lr = group["lr"]
-            group["momentum"]
             hidden_dim = group["hidden_dim"]
 
             for p in group["params"]:
