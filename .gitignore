@@ -66,3 +66,4 @@ credentials*.json
 *credential*
 *token*.json
 !package*.json
+lecoder-cgpu/
