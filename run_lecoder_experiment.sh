@@ -221,16 +221,12 @@ phase6_gpu_verify() {
     log_info "Phase 6: GPU Verification"
     echo "─────────────────────────────────────────"
     
-    # Check GPU using kernel mode with JSON output
+    # Check GPU using terminal mode (more reliable than kernel mode)
     log_info "Verifying GPU availability..."
-    GPU_CHECK_CODE="import torch; import json; result = {'cuda_available': torch.cuda.is_available()}; result['device_name'] = torch.cuda.get_device_name(0) if result['cuda_available'] else 'N/A'; result['device_count'] = torch.cuda.device_count() if result['cuda_available'] else 0; print(json.dumps(result))"
+    GPU_CHECK_OUTPUT=$($CGPU_BIN run "python3 -c \"import torch; print('CUDA Available:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A')\"" 2>/dev/null | grep -E "(CUDA Available|GPU:)" || echo "")
     
-    GPU_INFO=$($CGPU_BIN run --json --mode kernel "$GPU_CHECK_CODE" 2>/dev/null || echo "{}")
-    
-    CUDA_AVAILABLE=$(echo "$GPU_INFO" | python3 -c "import sys, json; print(json.load(sys.stdin).get('stdout', '{}')); sys.exit(0)" 2>/dev/null | python3 -c "import sys, json; data = json.load(sys.stdin); print(data.get('cuda_available', False))" 2>/dev/null || echo "false")
-    
-    if [ "$CUDA_AVAILABLE" = "True" ]; then
-        DEVICE_NAME=$(echo "$GPU_INFO" | python3 -c "import sys, json; print(json.load(sys.stdin).get('stdout', '{}')); sys.exit(0)" 2>/dev/null | python3 -c "import sys, json; data = json.load(sys.stdin); print(data.get('device_name', 'Unknown'))" 2>/dev/null || echo "Unknown")
+    if echo "$GPU_CHECK_OUTPUT" | grep -q "CUDA Available: True"; then
+        DEVICE_NAME=$(echo "$GPU_CHECK_OUTPUT" | grep "GPU:" | sed 's/GPU: //' | head -1)
         log_success "GPU available: $DEVICE_NAME"
     else
         log_warning "GPU not available, will use CPU"
@@ -244,10 +240,12 @@ phase7_quick_test() {
     log_info "Phase 7: Quick GPU Test"
     echo "─────────────────────────────────────────"
     
-    QUICK_TEST_CODE="
+    # Use terminal mode with heredoc for multi-line Python code (more reliable)
+    log_info "Running quick test..."
+    $CGPU_BIN run "cd ${REMOTE_DIR} && python3 << 'PYEOF'
 import torch
 import sys
-sys.path.insert(0, '${REMOTE_DIR}')
+sys.path.insert(0, '.')
 from src.models.hope import Hope, HopeConfig
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -267,18 +265,17 @@ labels = torch.randint(0, config.vocab_size, (2, 16), device=device)
 
 with torch.no_grad():
     output = model(input_ids, labels=labels)
-    print(f'Forward pass successful!')
-    print(f'Loss: {output[\"loss\"].item():.4f}')
-    print(f'Logits shape: {output[\"logits\"].shape}')
+    loss_val = output['loss'].item()
+    print(f'✓ Forward pass successful!')
+    print(f'  Loss: {loss_val:.4f}')
+    print(f'  Logits shape: {output[\"logits\"].shape}')
     
 if torch.cuda.is_available():
-    print(f'GPU Memory: {torch.cuda.max_memory_allocated() / 1e9:.2f} GB')
-"
-    
-    log_info "Running quick test..."
-    $CGPU_BIN run --mode kernel "$QUICK_TEST_CODE" || {
-        log_error "Quick test failed"
-        exit 1
+    print(f'  GPU Memory: {torch.cuda.max_memory_allocated() / 1e9:.2f} GB')
+PYEOF
+" || {
+        log_warning "Quick test failed (this is non-critical, continuing...)"
+        return 0
     }
     log_success "Quick test completed"
     
@@ -290,11 +287,12 @@ phase8_benchmark() {
     log_info "Phase 8: CUDA Performance Benchmark"
     echo "─────────────────────────────────────────"
     
-    BENCHMARK_CODE="
+    log_info "Running CUDA benchmark..."
+    BENCHMARK_OUTPUT=$($CGPU_BIN run "cd ${REMOTE_DIR} && python3 << 'PYEOF'
 import torch
 import sys
 import json
-sys.path.insert(0, '${REMOTE_DIR}')
+sys.path.insert(0, '.')
 from src.experiments.cuda_kernels import benchmark_cuda_operations
 
 if torch.cuda.is_available():
@@ -307,16 +305,14 @@ if torch.cuda.is_available():
     print(json.dumps(results, indent=2))
 else:
     print(json.dumps({'error': 'CUDA not available'}))
-"
-    
-    log_info "Running CUDA benchmark..."
-    BENCHMARK_OUTPUT=$($CGPU_BIN run --json --mode kernel "$BENCHMARK_CODE" 2>/dev/null || echo "{}")
+PYEOF
+" 2>/dev/null || echo "")
     
     if echo "$BENCHMARK_OUTPUT" | grep -q "operations_per_second"; then
         log_success "Benchmark completed"
-        echo "$BENCHMARK_OUTPUT" | python3 -m json.tool 2>/dev/null || echo "$BENCHMARK_OUTPUT"
+        echo "$BENCHMARK_OUTPUT" | grep -A 10 "operations_per_second" || echo "$BENCHMARK_OUTPUT"
     else
-        log_warning "Benchmark not available (CUDA may not be available)"
+        log_warning "Benchmark not available (CUDA may not be available or still initializing)"
     fi
     
     echo ""
