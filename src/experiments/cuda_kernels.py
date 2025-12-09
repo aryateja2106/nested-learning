@@ -80,10 +80,11 @@ def fused_titans_update(
         Updated memory matrices (M_k_new, M_v_new, M_memory_new)
     """
     device = M_k.device
-    dtype = get_tensor_core_dtype() if use_tensor_cores and check_cuda_available() else M_k.dtype
+    original_dtype = M_k.dtype
+    dtype = get_tensor_core_dtype() if use_tensor_cores and check_cuda_available() else original_dtype
 
     # Convert to tensor core dtype if supported
-    if dtype != M_k.dtype and use_tensor_cores:
+    if dtype != original_dtype and use_tensor_cores:
         M_k = M_k.to(dtype)
         M_v = M_v.to(dtype)
         M_memory = M_memory.to(dtype)
@@ -124,10 +125,10 @@ def fused_titans_update(
     )
 
     # Convert back to original dtype
-    if dtype != M_k.dtype:
-        M_k_new = M_k_new.to(M_k.dtype)
-        M_v_new = M_v_new.to(M_v.dtype)
-        M_memory_new = M_memory_new.to(M_memory.dtype)
+    if dtype != original_dtype:
+        M_k_new = M_k_new.to(original_dtype)
+        M_v_new = M_v_new.to(original_dtype)
+        M_memory_new = M_memory_new.to(original_dtype)
 
     return M_k_new, M_v_new, M_memory_new
 

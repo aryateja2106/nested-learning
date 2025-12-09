@@ -222,6 +222,7 @@ class EnterprisePipeline:
         self.metrics_history = []
         self.step = 0
         self.start_time = None
+        self.total_tokens_processed = 0
 
     def train_on_segment(
         self,
@@ -253,6 +254,7 @@ class EnterprisePipeline:
             metrics["segment"] = segment_id
             metrics["step"] = self.step
             segment_metrics.append(metrics)
+            self.metrics_history.append(metrics)
 
             if step % self.config.log_interval == 0:
                 self._log_metrics(metrics, segment_id)
@@ -276,7 +278,7 @@ class EnterprisePipeline:
         labels = batch["labels"].to(self.device)
 
         # Forward pass with AMP
-        with torch.amp.autocast(device_type="cuda", enabled=self.config.use_amp):
+        with torch.amp.autocast(device_type=self.device.type, enabled=self.config.use_amp):
             outputs = self.model(input_ids, labels=labels)
             loss = outputs["loss"]
 
@@ -300,10 +302,10 @@ class EnterprisePipeline:
             targets = labels[:, 1:]
             accuracy = (preds == targets).float().mean().item()
 
-            # Throughput calculation
-            tokens_processed = input_ids.numel()
+            # Throughput calculation (accumulate total tokens processed)
+            self.total_tokens_processed += input_ids.numel()
             elapsed = time.time() - self.start_time
-            throughput = (tokens_processed * self.step) / elapsed if elapsed > 0 else 0
+            throughput = self.total_tokens_processed / elapsed if elapsed > 0 else 0
 
         return {
             "loss": loss.item(),
