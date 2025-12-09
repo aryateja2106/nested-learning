@@ -59,21 +59,19 @@ This guide demonstrates how to use **LeCoder cGPU CLI** to run enterprise-grade 
 
 ### Install LeCoder cGPU CLI
 
-**Published on npm:** [lecoder-cgpu](https://www.npmjs.com/package/lecoder-cgpu)
-
 ```bash
-# Install from npm (Recommended)
+# Option 1: Install from npm (when published)
 npm install -g lecoder-cgpu
+
+# Option 2: Install from source
+git clone https://github.com/aryateja2106/LeCoder-cgpu-CLI.git
+cd LeCoder-cgpu-CLI
+npm install
+npm run build
+npm link
 
 # Verify installation
 lecoder-cgpu --version
-```
-
-**Alternative: Install from source**
-```bash
-git clone https://github.com/aryateja2106/LeCoder-cgpu-CLI.git
-cd LeCoder-cgpu-CLI
-npm install && npm run build && npm link
 ```
 
 ### Authenticate

@@ -13,38 +13,40 @@
 
 ## 🛠️ Built with LeCoder cGPU
 
-This project was developed and tested using **[LeCoder cGPU CLI](https://www.npmjs.com/package/lecoder-cgpu)** ([GitHub](https://github.com/aryateja2106/LeCoder-cgpu-CLI))—a production-grade command-line tool that brings Google Colab GPUs to your terminal.
+This project was developed and tested using **[LeCoder cGPU CLI](https://github.com/aryateja2106/LeCoder-cgpu-CLI)**—a production-grade command-line tool for seamless Google Colab GPU access.
 
-### Why We Built It
+**Why LeCoder cGPU?**  
+While building this implementation, we needed a robust way to:
+- Run experiments on A100 GPUs without leaving the terminal
+- Manage multiple Colab sessions for parallel experiments
+- Automate workflows with structured JSON output
+- Integrate GPU training into our development workflow
 
-While implementing Nested Learning, we needed:
-- ⚡ A100 GPU access without leaving the terminal
-- 🔄 Multi-session management for parallel experiments  
-- 🤖 Programmatic control for CI/CD pipelines
-- 📊 Structured output for automation
+**What we built:**  
+LeCoder cGPU provides enterprise-grade features including:
+- 🔐 Secure OAuth2 authentication
+- 📓 Notebook management via Drive API
+- 🚀 Remote code execution with kernel mode
+- 📊 Execution history and monitoring
+- 🔄 Multi-session support (Colab Pro)
+- 📁 File transfer and synchronization
+- 🤖 AI agent integration (JSON output)
 
-### Quick Start with LeCoder cGPU
+**See it in action:**  
+Check out our [Enterprise Experiment Guide](docs/LECODER_CGPU_GUIDE.md) to see how we used LeCoder cGPU to run A100-accelerated training experiments with custom CUDA kernels.
 
+**Try it yourself:**
 ```bash
-# Install from npm (published package)
-npm install -g lecoder-cgpu
+# Install from source (package not yet published to npm)
+cd lecoder-cgpu && npm install && npm link
+cd ..
 
-# Connect to Colab GPU
-lecoder-cgpu connect
+# Authenticate
+lecoder-cgpu auth
 
 # Run experiment
-lecoder-cgpu run "python train_hope.py --config large"
+./run_lecoder_experiment.sh full
 ```
-
-### Key Features
-- 🔐 Secure OAuth2 authentication
-- 📓 Notebook & Drive API integration
-- 🚀 Terminal + Jupyter kernel modes
-- 📊 Execution history & monitoring
-- 🔄 Multi-session support (Colab Pro)
-- 🤖 JSON output for AI agents
-
-📚 **[Full Documentation](lecoder-cgpu/README.md)** | 🎯 **[Enterprise Guide](docs/LECODER_CGPU_GUIDE.md)**
 
 ---
 
