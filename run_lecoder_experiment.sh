@@ -324,7 +324,7 @@ phase9_training() {
     echo "─────────────────────────────────────────"
     
     # $1 is config, $2 is steps (when called with arguments)
-    CONFIG="${1:-a100}"
+    CONFIG="${1:-t4}"  # Default to T4 for better memory compatibility
     STEPS="${2:-1000}"
     
     log_info "Running enterprise pipeline experiment..."
@@ -336,10 +336,17 @@ phase9_training() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
+    # Clear GPU memory before training if using CUDA
+    if [ "$CONFIG" = "a100" ] || [ "$CONFIG" = "t4" ]; then
+        log_info "Clearing GPU memory cache..."
+        $CGPU_BIN run "python3 -c \"import torch; torch.cuda.empty_cache() if torch.cuda.is_available() else None; print('GPU cache cleared')\"" 2>/dev/null || true
+    fi
+    
     TRAIN_CMD="cd ${REMOTE_DIR} && python -m src.experiments.enterprise_pipeline --config $CONFIG --steps $STEPS --output-json"
     
     log_info "Executing training command..."
     log_info "Note: Training output will stream in real-time. This may take 5-15 minutes for ${STEPS} steps."
+    log_info "Using config: $CONFIG (optimized for available GPU memory)"
     echo ""
     
     # Run training - output streams directly (no buffering)
@@ -358,6 +365,15 @@ phase9_training() {
     else
         log_error "Training failed with exit code: $TRAIN_EXIT_CODE"
         log_info "Check the output above for error details"
+        
+        # If A100 config failed with OOM, suggest using T4
+        if [ "$CONFIG" = "a100" ]; then
+            echo ""
+            log_warning "A100 config may have failed due to GPU memory constraints."
+            log_info "Try running with T4 config instead:"
+            log_info "  ./run_lecoder_experiment.sh train t4 $STEPS"
+        fi
+        
         exit 1
     fi
     
@@ -402,7 +418,7 @@ case "$MODE" in
     
     train)
         log_info "Running TRAIN mode: Full training experiment"
-        CONFIG="${2:-a100}"
+        CONFIG="${2:-t4}"  # Default to T4 for better memory compatibility
         STEPS="${3:-1000}"
         phase1_setup
         phase4_file_transfer
@@ -437,7 +453,10 @@ case "$MODE" in
         read -p "Run full training experiment? (y/N): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            phase9_training "a100" "500"
+            # Use T4 config by default (more memory-efficient)
+            # A100 config may fail if other processes are using GPU memory
+            log_info "Using T4 config for better memory compatibility"
+            phase9_training "t4" "500"
         fi
         
         phase10_history

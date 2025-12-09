@@ -184,12 +184,23 @@ class EnterprisePipeline:
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
+        # Clear GPU cache before starting (helps with memory fragmentation)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+        
         # Check CUDA capabilities
         self.use_cuda_accel = config.use_cuda_acceleration and check_cuda_available()
         if self.use_cuda_accel:
             print(f"✓ CUDA acceleration enabled: {torch.cuda.get_device_name(0)}")
             print(f"  Tensor cores available: {check_cuda_available()}")
             print(f"  Optimal dtype: {get_tensor_core_dtype()}")
+            # Show memory info
+            if torch.cuda.is_available():
+                allocated = torch.cuda.memory_allocated() / 1e9
+                reserved = torch.cuda.memory_reserved() / 1e9
+                total = torch.cuda.get_device_properties(0).total_memory / 1e9
+                print(f"  GPU Memory: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved, {total:.2f}GB total")
         else:
             print("⚠ CUDA acceleration not available, using CPU")
         
@@ -495,11 +506,12 @@ def main():
     
     # Create config based on preset
     if args.config == "a100":
+        # Reduced memory footprint for A100 when other processes are running
         config = EnterpriseConfig(
-            d_model=512,
-            d_hidden=2048,
-            num_layers=6,
-            batch_size=32,
+            d_model=384,  # Reduced from 512
+            d_hidden=1536,  # Reduced from 2048
+            num_layers=4,  # Reduced from 6
+            batch_size=16,  # Reduced from 32
             num_steps=1000,
             use_cuda_acceleration=True,
             use_amp=True,
