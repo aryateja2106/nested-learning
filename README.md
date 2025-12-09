@@ -13,7 +13,7 @@
 
 ## 🛠️ Built with LeCoder cGPU
 
-This project was developed and tested using **[LeCoder cGPU CLI](https://github.com/aryateja2106/LeCoder-cgpu-CLI)**—a production-grade command-line tool for seamless Google Colab GPU access.
+This project was developed and tested using **[LeCoder cGPU CLI](https://www.npmjs.com/package/lecoder-cgpu)** ([GitHub](https://github.com/aryateja2106/LeCoder-cgpu-CLI))—a production-grade command-line tool for seamless Google Colab GPU access.
 
 **Why LeCoder cGPU?**  
 While building this implementation, we needed a robust way to:
@@ -37,9 +37,8 @@ Check out our [Enterprise Experiment Guide](docs/LECODER_CGPU_GUIDE.md) to see h
 
 **Try it yourself:**
 ```bash
-# Install from source (package not yet published to npm)
-cd lecoder-cgpu && npm install && npm link
-cd ..
+# Install from npm (published package)
+npm install -g lecoder-cgpu
 
 # Authenticate
 lecoder-cgpu auth
