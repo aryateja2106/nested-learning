@@ -22,3 +22,4 @@ EXPOSE 7860
 # Default command: run the demo
 CMD ["python", "demo/app.py"]
 
+
