@@ -9,13 +9,13 @@ This package contains:
 - cuda_kernels.py: CUDA-accelerated operations for A100 optimization
 """
 
-from .enterprise_pipeline import EnterprisePipeline, EnterpriseConfig
 from .cuda_kernels import (
+    check_cuda_available,
     fused_titans_update,
     optimized_newton_schulz,
     parallel_cms_update,
-    check_cuda_available,
 )
+from .enterprise_pipeline import EnterpriseConfig, EnterprisePipeline
 
 __all__ = [
     "EnterprisePipeline",
@@ -25,5 +25,3 @@ __all__ = [
     "parallel_cms_update",
     "check_cuda_available",
 ]
-
-

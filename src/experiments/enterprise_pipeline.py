@@ -26,11 +26,8 @@ import json
 import math
 import time
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Optional
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 from ..core.optimizers import DeltaGradientDescent, M3Optimizer
@@ -79,7 +76,7 @@ class EnterpriseConfig:
 class CustomerFeedbackDataset(Dataset):
     """
     Simulated customer feedback dataset for enterprise use case.
-    
+
     Simulates:
     - Different customer segments with distinct patterns
     - Temporal shifts (customer preferences change over time)
@@ -107,38 +104,38 @@ class CustomerFeedbackDataset(Dataset):
     def __getitem__(self, idx):
         # Base pattern depends on customer segment
         base_pattern = self._generate_segment_pattern()
-        
+
         # Apply temporal shift (simulates changing preferences)
         shifted_idx = int(idx * (1 + self.temporal_shift))
-        
+
         # Generate sequence with segment-specific patterns
         tokens = self._generate_feedback_sequence(base_pattern, shifted_idx)
-        
+
         # Labels are next-token prediction
         labels = torch.cat([tokens[1:], tokens[:1]])  # Shifted by one
-        
+
         return {"input_ids": tokens, "labels": labels}
 
-    def _generate_segment_pattern(self) -> List[int]:
+    def _generate_segment_pattern(self) -> list[int]:
         """Generate base pattern for customer segment."""
         # Each segment has characteristic vocabulary and patterns
         segment_vocab_start = (self.customer_segment * self.vocab_size) // 5
         segment_vocab_end = ((self.customer_segment + 1) * self.vocab_size) // 5
-        
+
         pattern_len = 8
         pattern = torch.randint(
             segment_vocab_start,
             segment_vocab_end,
             (pattern_len,),
         ).tolist()
-        
+
         return pattern
 
-    def _generate_feedback_sequence(self, base_pattern: List[int], idx: int) -> torch.Tensor:
+    def _generate_feedback_sequence(self, base_pattern: list[int], idx: int) -> torch.Tensor:
         """Generate customer feedback sequence."""
         # Mix of pattern repetition and variation
         pattern_type = idx % 4
-        
+
         if pattern_type == 0:
             # Direct pattern repetition (common phrases)
             repeats = self.seq_len // len(base_pattern) + 1
@@ -155,25 +152,29 @@ class CustomerFeedbackDataset(Dataset):
             half = self.seq_len // 2
             positive_tokens = torch.tensor(base_pattern[:4])
             negative_tokens = torch.tensor(base_pattern[4:])
-            tokens = torch.cat([
-                positive_tokens.repeat(half // 4 + 1)[:half],
-                negative_tokens.repeat((self.seq_len - half) // 4 + 1)[:self.seq_len - half]
-            ])
+            tokens = torch.cat(
+                [
+                    positive_tokens.repeat(half // 4 + 1)[:half],
+                    negative_tokens.repeat((self.seq_len - half) // 4 + 1)[: self.seq_len - half],
+                ]
+            )
         else:
             # Product-specific terminology (specialized vocabulary)
             product_vocab_start = self.vocab_size - 100
             tokens = torch.randint(product_vocab_start, self.vocab_size, (self.seq_len,))
             # Insert pattern occasionally
             for i in range(0, self.seq_len, 16):
-                tokens[i:i+len(base_pattern)] = torch.tensor(base_pattern[:min(len(base_pattern), self.seq_len - i)])
-        
+                tokens[i : i + len(base_pattern)] = torch.tensor(
+                    base_pattern[: min(len(base_pattern), self.seq_len - i)]
+                )
+
         return tokens
 
 
 class EnterprisePipeline:
     """
     Enterprise continual learning pipeline using HOPE model.
-    
+
     Demonstrates:
     1. Long-term memory via CMS (remembers customer patterns)
     2. Real-time adaptation via Titans (adapts to new feedback)
@@ -183,7 +184,7 @@ class EnterprisePipeline:
     def __init__(self, config: EnterpriseConfig):
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
+
         # Check CUDA capabilities
         self.use_cuda_accel = config.use_cuda_acceleration and check_cuda_available()
         if self.use_cuda_accel:
@@ -192,7 +193,7 @@ class EnterprisePipeline:
             print(f"  Optimal dtype: {get_tensor_core_dtype()}")
         else:
             print("⚠ CUDA acceleration not available, using CPU")
-        
+
         # Create model
         hope_config = HopeConfig(
             d_model=config.d_model,
@@ -205,7 +206,7 @@ class EnterprisePipeline:
             cms_base_chunk_size=config.cms_base_chunk_size,
         )
         self.model = Hope(hope_config).to(self.device)
-        
+
         # Create optimizer
         if config.optimizer == "dgd":
             self.optimizer = DeltaGradientDescent(self.model.parameters(), lr=config.learning_rate)
@@ -213,10 +214,10 @@ class EnterprisePipeline:
             self.optimizer = M3Optimizer(self.model.parameters(), lr=config.learning_rate)
         else:
             self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=config.learning_rate)
-        
+
         # AMP scaler
         self.scaler = torch.amp.GradScaler() if config.use_amp else None
-        
+
         # Metrics
         self.metrics_history = []
         self.step = 0
@@ -227,7 +228,7 @@ class EnterprisePipeline:
         segment_id: int,
         num_steps: int,
         temporal_shift: float = 0.0,
-    ) -> Dict:
+    ) -> dict:
         """Train on a specific customer segment."""
         dataset = CustomerFeedbackDataset(
             vocab_size=self.config.vocab_size,
@@ -237,25 +238,25 @@ class EnterprisePipeline:
             temporal_shift=temporal_shift,
         )
         dataloader = DataLoader(dataset, batch_size=self.config.batch_size, shuffle=True)
-        
+
         segment_metrics = []
         train_iter = iter(dataloader)
-        
+
         for step in range(1, num_steps + 1):
             try:
                 batch = next(train_iter)
             except StopIteration:
                 train_iter = iter(dataloader)
                 batch = next(train_iter)
-            
+
             metrics = self._train_step(batch)
             metrics["segment"] = segment_id
             metrics["step"] = self.step
             segment_metrics.append(metrics)
-            
+
             if step % self.config.log_interval == 0:
                 self._log_metrics(metrics, segment_id)
-        
+
         return {
             "segment_id": segment_id,
             "final_loss": segment_metrics[-1]["loss"],
@@ -263,22 +264,22 @@ class EnterprisePipeline:
             "steps": num_steps,
         }
 
-    def _train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
+    def _train_step(self, batch: dict[str, torch.Tensor]) -> dict[str, float]:
         """Single training step."""
         self.model.train()
         self.step += 1
-        
+
         if self.start_time is None:
             self.start_time = time.time()
-        
+
         input_ids = batch["input_ids"].to(self.device)
         labels = batch["labels"].to(self.device)
-        
+
         # Forward pass with AMP
         with torch.amp.autocast(device_type="cuda", enabled=self.config.use_amp):
             outputs = self.model(input_ids, labels=labels)
             loss = outputs["loss"]
-        
+
         # Backward pass
         self.optimizer.zero_grad()
         if self.scaler:
@@ -291,19 +292,19 @@ class EnterprisePipeline:
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
-        
+
         # Compute metrics
         with torch.no_grad():
             logits = outputs["logits"]
             preds = logits[:, :-1].argmax(dim=-1)
             targets = labels[:, 1:]
             accuracy = (preds == targets).float().mean().item()
-            
+
             # Throughput calculation
             tokens_processed = input_ids.numel()
             elapsed = time.time() - self.start_time
             throughput = (tokens_processed * self.step) / elapsed if elapsed > 0 else 0
-        
+
         return {
             "loss": loss.item(),
             "accuracy": accuracy,
@@ -311,10 +312,10 @@ class EnterprisePipeline:
             "throughput_tokens_per_sec": throughput,
         }
 
-    def _log_metrics(self, metrics: Dict, segment_id: int):
+    def _log_metrics(self, metrics: dict, segment_id: int):
         """Log training metrics."""
         gpu_mem = torch.cuda.max_memory_allocated() / 1e9 if torch.cuda.is_available() else 0
-        
+
         log_msg = (
             f"Step {self.step:5d} | Segment {segment_id} | "
             f"Loss: {metrics['loss']:.4f} | "
@@ -322,26 +323,26 @@ class EnterprisePipeline:
             f"PPL: {metrics['perplexity']:.2f} | "
             f"Throughput: {metrics['throughput_tokens_per_sec']:.0f} tok/s"
         )
-        
+
         if gpu_mem > 0:
             log_msg += f" | GPU: {gpu_mem:.2f}GB"
-        
+
         print(log_msg)
 
     def evaluate_continual_learning(
         self,
-        test_segments: List[int],
+        test_segments: list[int],
         num_samples_per_segment: int = 100,
-    ) -> Dict:
+    ) -> dict:
         """
         Evaluate continual learning capability.
-        
+
         Tests if model remembers patterns from previous segments
         (no catastrophic forgetting).
         """
         self.model.eval()
         results = {}
-        
+
         for segment_id in test_segments:
             dataset = CustomerFeedbackDataset(
                 vocab_size=self.config.vocab_size,
@@ -350,32 +351,32 @@ class EnterprisePipeline:
                 customer_segment=segment_id,
             )
             dataloader = DataLoader(dataset, batch_size=self.config.batch_size)
-            
+
             total_loss = 0.0
             total_correct = 0
             total_tokens = 0
-            
+
             with torch.no_grad():
                 for batch in dataloader:
                     input_ids = batch["input_ids"].to(self.device)
                     labels = batch["labels"].to(self.device)
-                    
+
                     outputs = self.model(input_ids, labels=labels, update_cms=False)
                     total_loss += outputs["loss"].item()
-                    
+
                     preds = outputs["logits"][:, :-1].argmax(dim=-1)
                     targets = labels[:, 1:]
                     total_correct += (preds == targets).sum().item()
                     total_tokens += targets.numel()
-            
+
             results[f"segment_{segment_id}"] = {
                 "loss": total_loss / len(dataloader),
                 "accuracy": total_correct / total_tokens,
             }
-        
+
         return results
 
-    def run_experiment(self) -> Dict:
+    def run_experiment(self) -> dict:
         """Run full enterprise experiment."""
         print("\n" + "=" * 80)
         print("ENTERPRISE CONTINUAL LEARNING PIPELINE")
@@ -386,7 +387,7 @@ class EnterprisePipeline:
         print(f"Mixed Precision: {self.config.use_amp}")
         print(f"Optimizer: {self.config.optimizer}")
         print("=" * 80 + "\n")
-        
+
         # Benchmark CUDA operations if available
         if self.use_cuda_accel:
             print("Benchmarking CUDA operations...")
@@ -399,11 +400,11 @@ class EnterprisePipeline:
             print(f"  Operations/sec: {benchmark_results.get('operations_per_second', 0):.0f}")
             print(f"  Tensor cores: {benchmark_results.get('tensor_cores_available', False)}")
             print()
-        
+
         # Train on multiple customer segments sequentially
         # This tests continual learning (no forgetting)
         steps_per_segment = self.config.num_steps // self.config.num_customer_segments
-        
+
         segment_results = []
         for segment_id in range(self.config.num_customer_segments):
             print(f"\n>>> Training on Customer Segment {segment_id} <<<")
@@ -413,17 +414,17 @@ class EnterprisePipeline:
                 temporal_shift=segment_id * 0.1,  # Simulate temporal drift
             )
             segment_results.append(result)
-        
+
         # Evaluate continual learning
         print("\n>>> Evaluating Continual Learning Capability <<<")
         eval_results = self.evaluate_continual_learning(
             test_segments=list(range(self.config.num_customer_segments)),
         )
-        
+
         # Final summary
         total_time = time.time() - self.start_time if self.start_time else 0
         final_metrics = self.metrics_history[-1] if self.metrics_history else {}
-        
+
         summary = {
             "experiment": "enterprise_continual_learning",
             "config": asdict(self.config),
@@ -444,27 +445,27 @@ class EnterprisePipeline:
             "segment_results": segment_results,
             "continual_learning_evaluation": eval_results,
         }
-        
+
         if self.config.output_json:
             print("\n" + json.dumps(summary, indent=2, default=str))
         else:
             self._print_summary(summary)
-        
+
         return summary
 
-    def _print_summary(self, summary: Dict):
+    def _print_summary(self, summary: dict):
         """Print human-readable summary."""
         print("\n" + "=" * 80)
         print("EXPERIMENT SUMMARY")
         print("=" * 80)
-        
+
         print("\n## Hardware")
         hw = summary["hardware"]
         print(f"  Device: {hw['device']}")
         print(f"  GPU: {hw['gpu_name']}")
         print(f"  CUDA Acceleration: {hw['cuda_acceleration']}")
         print(f"  Tensor Cores: {hw['tensor_cores']}")
-        
+
         print("\n## Training Performance")
         train = summary["training"]
         print(f"  Total Steps: {train['total_steps']}")
@@ -473,12 +474,12 @@ class EnterprisePipeline:
         print(f"  Final Loss: {train['final_loss']:.4f}")
         print(f"  Final Accuracy: {train['final_accuracy']:.3f}")
         print(f"  Throughput: {train['final_throughput']:.0f} tokens/sec")
-        
+
         print("\n## Continual Learning Evaluation")
         cl_eval = summary["continual_learning_evaluation"]
         for segment_key, metrics in cl_eval.items():
             print(f"  {segment_key}: Loss={metrics['loss']:.4f}, Acc={metrics['accuracy']:.3f}")
-        
+
         print("\n" + "=" * 80)
 
 
@@ -490,9 +491,9 @@ def main():
     parser.add_argument("--optimizer", type=str, default=None, choices=["dgd", "m3", "adamw"])
     parser.add_argument("--output-json", action="store_true", help="Output results as JSON")
     parser.add_argument("--output-file", type=str, default=None, help="Save results to file")
-    
+
     args = parser.parse_args()
-    
+
     # Create config based on preset
     if args.config == "a100":
         config = EnterpriseConfig(
@@ -524,7 +525,7 @@ def main():
             use_cuda_acceleration=False,
             use_amp=False,
         )
-    
+
     # Override with CLI args
     if args.steps:
         config.num_steps = args.steps
@@ -534,11 +535,11 @@ def main():
         config.optimizer = args.optimizer
     if args.output_json:
         config.output_json = True
-    
+
     # Run experiment
     pipeline = EnterprisePipeline(config)
     results = pipeline.run_experiment()
-    
+
     # Save results if requested
     if args.output_file:
         with open(args.output_file, "w") as f:
@@ -548,4 +549,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
