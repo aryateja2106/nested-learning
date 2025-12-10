@@ -67,5 +67,10 @@ credentials*.json
 *token*.json
 !package*.json
 
+# Internal working docs
+.ai-working-docs/
+BUG_FIXES_REPORT.md
+SECURITY_CHECKLIST.md
+
 # Separate project repositories
 lecoder-cgpu/
