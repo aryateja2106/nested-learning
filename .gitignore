@@ -66,3 +66,6 @@ credentials*.json
 *credential*
 *token*.json
 !package*.json
+
+# Separate project repositories
+lecoder-cgpu/
